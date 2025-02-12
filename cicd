@@ -1,0 +1,50 @@
+pipeline {
+    agent any
+
+    environment {
+        TOMCAT_HOST = 'your.tomcat.server'  // Replace with your Tomcat server's hostname or IP address
+        TOMCAT_PORT = '8080'                // Replace if your Tomcat runs on a different port
+        TOMCAT_USER = 'ramnath'             // Replace with your Tomcat manager username
+        TOMCAT_PASSWORD = 'password'        // Replace with your Tomcat manager password
+        TOMCAT_APP_NAME = 'myApp'           // The name of your web application (artifactId from pom.xml)
+        WAR_FILE_PATH = 'E:/maven/MavenWebAppProject/target/$TOMCAT_APP_NAME.war' // Full path to the WAR file
+    }
+
+    stages {
+        stage('Checkout') {
+            steps {
+                // Checkout code from your GitHub repository
+                git 'https://github.com/Ram345678/github.git'  // Your GitHub repo URL
+            }
+        }
+
+        stage('Build WAR') {
+            steps {
+                // Build the WAR file using Maven
+                sh 'mvn clean package -DskipTests'
+            }
+        }
+
+        stage('Deploy to Tomcat') {
+            steps {
+                // Deploy WAR file to Tomcat server using curl
+                sh """
+                    curl -u $TOMCAT_USER:$TOMCAT_PASSWORD -T $WAR_FILE_PATH \
+                        http://$TOMCAT_HOST:$TOMCAT_PORT/manager/text/deploy?path=/$TOMCAT_APP_NAME
+                """
+            }
+        }
+    }
+    
+    post {
+        always {
+            echo "Cleaning up..."
+        }
+        success {
+            echo "Build and Deployment successful!"
+        }
+        failure {
+            echo "Build or Deployment failed!"
+        }
+    }
+}
